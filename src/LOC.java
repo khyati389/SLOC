@@ -7,12 +7,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public class LOC {
 
     private Set<Path> javaFilesSet;
-    private Set<Path> directories;
     private Map<String, Path> fileContentMap;
 
     private int totalFiles;
@@ -23,7 +23,6 @@ public class LOC {
 
     LOC() {
       this.javaFilesSet = new HashSet<>();
-      this.directories = new HashSet<>();
       this.fileContentMap = new HashMap<>();
 
       this.totalFiles = 0;
@@ -68,11 +67,10 @@ public class LOC {
      */
     public void getListOfAllFiles(String directory) {
         try {
-            int count = (int) Files.list(Paths.get(directory))
+            totalFiles = (int) Files.list(Paths.get(directory))
                         .filter(path -> path.toString()
                         .endsWith(".java"))
                         .count();
-            totalFiles = count;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -118,19 +116,29 @@ public class LOC {
     }
 
     /**
-     * Read a file line by line and count
+     * Read a file line by line and counts
      * blank lines, comments and source code lines.
      * @param filePath path of a file
      */
     public void readFileByLine(Path filePath) {
+        AtomicBoolean isComment = new AtomicBoolean(false);
         try (Stream<String> stream = Files.lines(Paths.get(String.valueOf(filePath)))) {
-            stream.forEach(line -> {
-                String currentLine = line.trim();
-                if (currentLine.isBlank() || currentLine == " ") {
+            stream.map(String::trim).forEach(currentLine -> {
+                if (!isComment.get() && (currentLine.isBlank() || currentLine.equals(" "))) { // counts blank lines
                     totalBlankLines++;
-                }else if (currentLine.startsWith("/*") || currentLine.startsWith("//")) {
+                } else if (!isComment.get() && currentLine.startsWith("//")) { // counts single line comment
                     totalCommentLines++;
-                }else {
+                } else if (!isComment.get() && currentLine.startsWith("/*")) {
+                    if (!currentLine.endsWith("*/")) { // counts single line comment
+                        isComment.set(true); // enable multiple comment code on
+                    }
+                    totalCommentLines++;
+                } else if (isComment.get()) { //counts multiple lines comments
+                    totalCommentLines++;
+                    if(currentLine.endsWith("*/")) {
+                        isComment.set(false);
+                    }
+                } else { // counts code lines
                     totalCodeLines++;
                 }
             });
