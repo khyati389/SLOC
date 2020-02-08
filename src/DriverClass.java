@@ -8,7 +8,9 @@
  * 4. The total number of comment lines. (in all unique java files) >done
  * 5. The total number of code lines. (only code line excluding comments and blanks) >done
  * 6. Add user enabled input
- * 7. Create a jar
+ * 7. Refactor code & remove unused variables
+ * 8. Create a jar
+ * 9. verify
  */
 
 public class DriverClass {
