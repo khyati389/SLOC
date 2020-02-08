@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,8 +15,8 @@ public class LOC {
     private Set<Path> directories;
     private Map<String, Path> fileContentMap;
 
-    private int countOfAllFiles;
-    private int countOfAllUniqueFiles;
+    private int totalFiles;
+    private int totalUniqueFiles;
     private int totalBlankLines;
     private int totalCommentLines;
     private int totalCodeLines;
@@ -25,8 +26,8 @@ public class LOC {
       this.directories = new HashSet<>();
       this.fileContentMap = new HashMap<>();
 
-      this.countOfAllFiles = 0;
-      this.countOfAllUniqueFiles = 0;
+      this.totalFiles = 0;
+      this.totalUniqueFiles = 0;
       this.totalBlankLines = 0;
       this.totalCommentLines = 0;
       this.totalCodeLines = 0;
@@ -36,8 +37,20 @@ public class LOC {
      * Program Start Point.
      */
     public void start(String path) {
-        this.getListOfAllFiles(path);
-        this.getListOfUniqueFiles(path);
+        File file = new File(path);
+        if(file.exists()) { // Check if file or directory exists
+            if(file.isDirectory()) { // Check if path is directory
+                this.getListOfAllFiles(path);
+                this.getListOfUniqueFiles(path);
+                this.processFiles();
+            }else if(file.isFile()) { // Check if path is file
+                totalFiles = 1;
+                totalUniqueFiles = 1;
+                this.readFileByLine(Paths.get(path));
+            }
+        }else {
+            System.out.println("Error! path: "+path+" does not exist!");
+        }
     }
 
     /**
@@ -51,6 +64,7 @@ public class LOC {
 
     /**
      * finds all java files inside a directory.
+     * @param directory directory path
      */
     public void getListOfAllFiles(String directory) {
         try {
@@ -58,7 +72,7 @@ public class LOC {
                         .filter(path -> path.toString()
                         .endsWith(".java"))
                         .count();
-            this.setCountOfAllFiles(count);
+            totalFiles = count;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,6 +80,7 @@ public class LOC {
 
     /**
      * finds unique java files inside a directory.
+     * @param directory directory path
      */
     public void getListOfUniqueFiles(String directory) {
         try {
@@ -86,58 +101,69 @@ public class LOC {
             });
 
             if(javaFilesSet.size() > 0) {
-                this.setCountOfAllUniqueFiles(javaFilesSet.size());
+                totalUniqueFiles = javaFilesSet.size();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public int getCountOfAllFiles() {
-        return countOfAllFiles;
+    /**
+     * Process list of files inside a directory.
+     */
+    public void processFiles() {
+        for (Path filePath : javaFilesSet) {
+            this.readFileByLine(filePath);
+        }
     }
 
-    public void setCountOfAllFiles(int countOfAllFiles) {
-        this.countOfAllFiles = countOfAllFiles;
+    /**
+     * Read a file line by line and count
+     * blank lines, comments and source code lines.
+     * @param filePath path of a file
+     */
+    public void readFileByLine(Path filePath) {
+        try (Stream<String> stream = Files.lines(Paths.get(String.valueOf(filePath)))) {
+            stream.forEach(line -> {
+                String currentLine = line.trim();
+                if (currentLine.isBlank() || currentLine == " ") {
+                    totalBlankLines++;
+                }else if (currentLine.startsWith("/*") || currentLine.startsWith("//")) {
+                    totalCommentLines++;
+                }else {
+                    totalCodeLines++;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public int getCountOfAllUniqueFiles() {
-        return countOfAllUniqueFiles;
+    public int getTotalFiles() {
+        return totalFiles;
     }
 
-    public void setCountOfAllUniqueFiles(int countOfAllUniqueFiles) {
-        this.countOfAllUniqueFiles = countOfAllUniqueFiles;
+    public int getTotalUniqueFiles() {
+        return totalUniqueFiles;
     }
 
     public int getTotalBlankLines() {
         return totalBlankLines;
     }
 
-    public void setTotalBlankLines(int totalBlankLines) {
-        this.totalBlankLines = totalBlankLines;
-    }
-
     public int getTotalCommentLines() {
         return totalCommentLines;
-    }
-
-    public void setTotalCommentLines(int totalCommentLines) {
-        this.totalCommentLines = totalCommentLines;
     }
 
     public int getTotalCodeLines() {
         return totalCodeLines;
     }
 
-    public void setTotalCodeLines(int totalCodeLines) {
-        this.totalCodeLines = totalCodeLines;
-    }
-
     @Override
     public String toString() {
         return "LOC{" +
-                "countOfAllFiles=" + countOfAllFiles +
-                ", countOfAllUniqueFiles=" + countOfAllUniqueFiles +
+                "totalFiles=" + totalFiles +
+                ", totalUniqueFiles=" + totalUniqueFiles +
                 ", totalBlankLines=" + totalBlankLines +
                 ", totalCommentLines=" + totalCommentLines +
                 ", totalCodeLines=" + totalCodeLines +
