@@ -157,12 +157,10 @@ public class LOC {
 
     @Override
     public String toString() {
-        return "LOC{" +
-                "totalFiles=" + totalFiles +
-                ", totalUniqueFiles=" + totalUniqueFiles +
-                ", totalBlankLines=" + totalBlankLines +
-                ", totalCommentLines=" + totalCommentLines +
-                ", totalCodeLines=" + totalCodeLines +
-                '}';
+        return  totalFiles +
+                "-" + totalUniqueFiles +
+                "-" + totalBlankLines +
+                "-" + totalCommentLines +
+                "-" + totalCodeLines;
     }
 }
