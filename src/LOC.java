@@ -1,19 +1,19 @@
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 public class LOC {
 
-    private Set<Path> javaFilesSet;
-    private Map<String, Path> fileContentMap;
+    private List<File> uniqueFiles;
+    private List<File> allFiles;
+    private Map<String, File> fileContentMap;
 
     private int totalFiles;
     private int totalUniqueFiles;
@@ -22,7 +22,8 @@ public class LOC {
     private int totalCodeLines;
 
     LOC() {
-      this.javaFilesSet = new HashSet<>();
+      this.uniqueFiles = new ArrayList<>();
+      this.allFiles = new ArrayList<>();
       this.fileContentMap = new HashMap<>();
 
       this.totalFiles = 0;
@@ -40,12 +41,12 @@ public class LOC {
         if(file.exists()) { // Check if file or directory exists
             if(file.isDirectory()) { // Check if path is directory
                 this.getListOfAllFiles(path);
-                this.getListOfUniqueFiles(path);
+                this.getListOfUniqueFiles();
                 this.processFiles();
             }else if(file.isFile()) { // Check if path is file
                 totalFiles = 1;
                 totalUniqueFiles = 1;
-                this.readFileByLine(Paths.get(path));
+                this.readFileByLine(new File(path));
             }
         }else {
             System.out.println("Error! path: "+path+" does not exist!");
@@ -57,7 +58,7 @@ public class LOC {
      * @return content of a file
      * @param filePath path of a file
      */
-    public String readFile(Path filePath) throws IOException {
+    public String readFile(File filePath) throws IOException {
         return Files.readString(Paths.get(String.valueOf(filePath)));
     }
 
@@ -66,43 +67,30 @@ public class LOC {
      * @param directory directory path
      */
     public void getListOfAllFiles(String directory) {
-        try {
-            totalFiles = (int) Files.list(Paths.get(directory))
-                        .filter(path -> path.toString()
-                        .endsWith(".java"))
-                        .count();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        SuffixFileFilter ext = new SuffixFileFilter(".java");
+        allFiles = (List<File>) FileUtils.listFiles(new File(directory),
+                            ext, TrueFileFilter.INSTANCE);
+        totalFiles = allFiles.size();
     }
 
     /**
      * finds unique java files inside a directory.
-     * @param directory directory path
      */
-    public void getListOfUniqueFiles(String directory) {
-        try {
-            Stream<Path> files = Files.list(Paths.get(directory))
-                                .filter(path -> path.toString()
-                                .endsWith(".java"));
-
-            files.forEach(filePath -> {
-                try {
-                    String content = this.readFile(filePath);
-                    if(!fileContentMap.containsKey(content)) {
-                        fileContentMap.put(content, filePath);
-                        javaFilesSet.add(filePath);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+    public void getListOfUniqueFiles() {
+        allFiles.forEach(filePath -> {
+            try {
+                String content = this.readFile(filePath);
+                if(!fileContentMap.containsKey(content)) {
+                    fileContentMap.put(content, filePath);
+                    uniqueFiles.add(filePath);
                 }
-            });
-
-            if(javaFilesSet.size() > 0) {
-                totalUniqueFiles = javaFilesSet.size();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        });
+
+        if(uniqueFiles.size() > 0) {
+            totalUniqueFiles = uniqueFiles.size();
         }
     }
 
@@ -110,7 +98,7 @@ public class LOC {
      * Process list of files inside a directory.
      */
     public void processFiles() {
-        for (Path filePath : javaFilesSet) {
+        for (File filePath : uniqueFiles) {
             this.readFileByLine(filePath);
         }
     }
@@ -120,7 +108,7 @@ public class LOC {
      * blank lines, comments and source code lines.
      * @param filePath path of a file
      */
-    public void readFileByLine(Path filePath) {
+    public void readFileByLine(File filePath) {
         AtomicBoolean isComment = new AtomicBoolean(false);
         try (Stream<String> stream = Files.lines(Paths.get(String.valueOf(filePath)))) {
             stream.map(String::trim).forEach(currentLine -> {
