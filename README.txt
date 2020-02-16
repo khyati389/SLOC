@@ -18,7 +18,7 @@ There are two file inside `src/main/com/SLOC` folder:
 target folder contains the executable JAR with dependencies named assignment-1.0.jar.
 
 To run jar and get the results type following command:
->`java -jar target/assignment-1.0.jar [file/directory Name]`
+>`java -jar target/assignment-1.0.jar <file/directory Name>`
 
 #### Results:
 prints the count of,
