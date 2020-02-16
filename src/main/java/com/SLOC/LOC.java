@@ -131,13 +131,17 @@ public class LOC {
                     }
                     totalCommentLines++;
                 } else if (isComment.get()) { //counts multiple lines comments
-                    totalCommentLines++;
-                    if(currentLine.endsWith("*/")) {
-                        isComment.set(false);
+                    if(currentLine.isBlank()) { // blank lines inside comments
+                        totalBlankLines++;
+                    }else {
+                        totalCommentLines++;
+                        if(currentLine.endsWith("*/") || currentLine.contains("*/")) {
+                            isComment.set(false);
+                        }
                     }
                 } else { // counts code lines
                     if(currentLine.contains("/*")) {
-                        if (!currentLine.endsWith("*/")) { // counts single line comment
+                        if (!(currentLine.endsWith("*/") || currentLine.contains("*/"))) {
                             isComment.set(true); // enable multiple comment code on
                         }
                     }
