@@ -3,7 +3,9 @@
 java program to count SLOC, blank lines and comments in .java file of a given directory
 
 #### Folder Structure
----
+
+***
+
 There are two file inside `src/main/com/SLOC` folder:
 
 1. MainClass.java: main class used to run the program
